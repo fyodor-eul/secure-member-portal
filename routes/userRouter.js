@@ -3,8 +3,6 @@ const {
   memberSignup, memberLogin, memberAuth, checkRole
 } = require("../Controller/authFunctions");
 
-// WHY ONE IS SYNC AND OTHER IS ASYNC ??
-
 // Registration
 // Member Registration Route (async)
 router.post("/register-member", async (req,res) => {
