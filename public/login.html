@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+    form{
+      border: 3px solid #f1f1f1;
+    }
+    
+    input, select{
+      width: 100%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      display: inline-block;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    button{
+      background-color: #04AA6D;
+      color: white;
+      padding: 14px 20px;
+      margin: 8px 0;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover{
+      opacity: 0.8;
+    }
+
+    .container{
+      padding: 5px;
+    }
+
+    span.psw{
+      float: right;
+      padding-top: 16px;
+    }
+    </style>
+  </head>
+  <body>
+    <form id="loginForm">
+      <div class="container">
+        <label for="uname"><b>Name</b></label>
+        <input id="uname" type="text" placeholder="Enter Name" name="uname" required>
+
+        <label for="psw"><b>Password</b></label>
+        <input id="psw" type="password" placeholder="Enter Password" name="psw" required>
+
+        <label for="role"><b>Role</b></label>
+        <select name="role" id="role">
+          <option value="member">Member</option>
+          <option value="president">President</option>
+          <option value="treasurer">Treasurer</option>
+        </select>
+
+        <button type="submit">Login</button>
+      </div>
+      <div class="container" style="background-color: #f1f1f1">
+        <span class="psw"><a href="register.html">Sign Up</a></span>
+      </div>
+    </form>
+  </body>
+  <script>
+    // Intercept form submission
+    function processForm(event){
+      event.preventDefault();
+      const uname = document.getElementById("uname");
+      const psw = document.getElementById("psw");
+      const role = document.getElementById("role").value;
+
+      var data = JSON.stringify({
+        "name": uname.value,
+        "password": psw.value
+      });
+
+      var xhr = new XMLHttpRequest();
+      xhr.addEventListener("readystatechange", function(){
+        if(this.readyState === 4){
+          var response = JSON.parse(this.responseText);
+          if(this.status === 200){
+            localStorage.setItem("token", response.token);
+            if(response.role == "member"){
+              window.location.href = "member.html";
+            }else if(response.role == "president"){
+              window.location.href = "president.html";
+            }else if(response.role == "treasurer"){
+              window.location.href = "treasurer.html";
+            }
+          }else{
+            alert(response.message);
+          }
+        }
+      })
+      xhr.open("POST", "login-"+role);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.send(data);
+    }
+    const form = document.getElementById("loginForm");
+    form.addEventListener("submit", processForm);
+  </script>
+</html>
+
