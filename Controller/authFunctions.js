@@ -53,8 +53,8 @@ const validateEmail = async email => {
 const memberLogin = async (req, role, res) => {
 
   let { name, password } = req;
-  //console.log(name, password);
-  setTimeout(() => console.log(name, password), 3000);
+  // console.log(name, password);
+  // setTimeout(() => console.log(name, password), 3000);
 
   // Check if the username exists
   const member = await Member.findOne({ name });
