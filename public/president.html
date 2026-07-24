@@ -13,6 +13,7 @@
 
     <h4>Recent Failed Login Attempts</h4>
     <button id="refreshLogs">Refresh</button>
+    <div id="alertBanner"></div>
     <table id="logTable" border="1" cellpadding="6" style="margin-top:10px; border-collapse:collapse;">
       <thead>
         <tr>
@@ -48,14 +49,55 @@
         const data = JSON.parse(this.responseText);
         body.innerHTML = "";
 
+        /* alert banner */
+        const banner = document.getElementById("alertBanner");
+
+        banner.innerHTML = "";
+        banner.className = "";
+
         if(data.logs.length === 0){
           msg.textContent = "No failed attempts recorded.";
           return;
         }
 
+        const alerts = data.alerts;
+        const lines = [];
+
+        const flaggedNames = new Set(alerts.accounts.map(function(a){return a.name;}));
+        const flaggedIps = new Set(alerts.ips.map(function(a){return a.ip;}));
+
+        alerts.accounts.forEach(function(a){
+          lines.push("Accounts \"" + a.name + "\" - " + a.count +
+            " failed attempts in " + alerts.windowMinutes + " min(s)");
+        });
+
+        alerts.ips.forEach(function(a){
+          lines.push("IP " + a.ip + " - " + a.count +
+            " failed attempts in " + alerts.windowMinutes + " min(s)");
+        });
+
+        if(lines.length > 0){
+          banner.className = "alert-banner";
+
+          const title = document.createElement("strong");
+          title.textContent = "Possible brute-force activity";
+          banner.appendChild(title);
+
+          lines.forEach(function(line){
+            const p = document.createElement("p");
+            p.textContent = line;
+            banner.appendChild(p);
+          });
+        }
+
         msg.textContent = "";
         data.logs.forEach(function(log){
           const row = document.createElement("tr");
+
+          if(flaggedNames.has(log.attemptedName) || flaggedIps.has(log.ip)){
+            row.className = "flagged";
+          }
+
           [
             new Date(log.createdAt).toLocaleString(),
             log.attemptedName,

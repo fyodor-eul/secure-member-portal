@@ -140,6 +140,7 @@ router.get("/president-protected",
 );
 
 // President only: View Failed Login Attempts
+/*
 router.get("/failed-logins",
   memberAuth,
   checkRole(["president"]),
@@ -149,6 +150,38 @@ router.get("/failed-logins",
     return res.status(200).json({ logs });
   }
 )
+*/
+router.get("/failed-logins",
+  memberAuth,
+  checkRole(["president"]),
+  async(req, res)=>{
+    const logs = await FailedLogin.find().sort({ createdAt: -1 }).limit(50);
+
+    const windowMs = Number(process.env.SPIKE_WINDOW_MS);
+    const since = new Date(Date.now() - windowMs);
+
+    const byAccount = await FailedLogin.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      { $group: { _id: "$attemptedName", count: { $sum: 1 } } },
+      { $match: { count: { $gte: Number(process.env.SPIKE_THRESHOLD_ACCOUNT) } } }
+    ]);
+
+    const byIp = await FailedLogin.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      { $group: { _id: "$ip", count: { $sum: 1 } } },
+      { $match: { count: { $gte: Number(process.env.SPIKE_THRESHOLD_IP) } } }
+    ]);
+
+    return res.status(200).json({
+      logs,
+      alerts:{
+        accounts: byAccount.map(a => ({ name: a._id, count: a.count })),
+        ips: byIp.map(a => ({ ip: a._id, count: a.count })),
+        windowMinutes: Math.round(windowMs / 60000)
+      }
+    });
+  }
+);
 
 // Treasurer Protected Route
 router.get("/treasurer-protected",

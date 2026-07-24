@@ -71,6 +71,43 @@ const normalizeIp = (ip) => {
   return ip;
 };
 
+const checkForSpike = async (name, ip) => {
+  try{
+    const windowMs = Number(process.env.SPIKE_WINDOW_MS);
+    const since = new Date(Date.now() - windowMs);
+    const windowMin = Math.round(windowMs/60000);
+
+    // Target-scoped: many failure against one account
+    const accountFails = await FailedLogin.countDocuments({
+      attemptedName: name,
+      createdAt: { $gte: since }
+    });
+
+    if(accountFails >= Number(process.env.SPIKE_THRESHOLD_ACCOUNT)){
+      console.warn(
+        `[SPIKE] account "${name}" - ${accountFails} failed attempts in ${windowMin} min(s)`
+      );
+    }
+
+    // Source-scoped: many failures from one address, across any accounts
+    if(ip){
+      const ipFails = await FailedLogin.countDocuments({
+        ip: ip,
+        createdAt: { $gte: since }
+      });
+
+      if(ipFails >= Number(process.env.SPIKE_THRESHOLD_IP)){
+        console.warn(
+          `[SPIKE] ip ${ip} - ${ipFails} failed attempts in ${windowMin} min(s)`
+        );
+      }
+    }
+  }catch{
+    // do not break the logic flow
+    console.error("[SPIKE] Failed to run spike check");
+  }
+};
+
 const logFailedLogin = async (name, role, reason, req) => {
   try{
     const failedLogin = new FailedLogin({
@@ -81,6 +118,7 @@ const logFailedLogin = async (name, role, reason, req) => {
       userAgent: req?.headers?.["user-agent"]
     });
     await failedLogin.save();
+    await checkForSpike(name || "(none)", normalizeIp(req?.ip));
   }catch{
     // logging must never break the login flow
     console.error("[LOG] Failed to write failed-login record");
