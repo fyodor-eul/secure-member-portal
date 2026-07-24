@@ -1,41 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
+
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Member Page</title>
   </head>
+
   <body>
     <h3>Welcome Member</h3>
     <a href="#" id="logout">Logout</a>
+
+    <h4>Upload Profile Photo</h4>
+    <input type="file" id="avatar" accept="image/jpeg,image/png">
+    <button id="uploadBtn">Upload</button>
+    <p id="uploadMsg"></p>
+
+    <h4>Your Profile Photo</h4>
+    <img id="profilePhoto" style="max-width:200px; display:none; border:1px solid #ccc;">
+    <p id="noPhoto">No Photo uploaded yet.</p>
   </body>
+
   <script>
-  function logoutUser(event){
-    localStorage.removeItem("token");
-    window.location.href = "login.html";
-  }
+    function logoutUser(event){
+      localStorage.removeItem("token");
+      window.location.href = "login.html";
+    }
 
-  const token = localStorage.getItem("token");
-  if(token === null){
-    window.location.href = "login.html";
-  }else{
-    var data = "";
-    var xhr = new XMLHttpRequest();
-    xhr.addEventListener("readystatechange",function(){
-      if(this.readyState === 4){
-        if(this.status === 200){
-          alert("Welcome Member");
-        }else{
-          window.location.href = "login.html";
+    function loadPhoto(){
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = "blob";
+      xhr.addEventListener("readystatechange", function(){
+        if(this.readyState === 4){
+          const img = document.getElementById("profilePhoto");
+          const none = document.getElementById("noPhoto");
+          if(this.status === 200){
+            img.src = URL.createObjectURL(this.response);
+            img.style.display = "block";
+            none.style.display = "none";
+          }else{
+            img.style.display = "none";
+            none.style.display = "block";
+          }
         }
-      }
-    });
-    xhr.open("GET", "member-protected");
-    xhr.setRequestHeader("Authorization", "Bearer " + token);
-    xhr.send(data);
-  }
+      });
+      xhr.open("GET", "my-photo");
+      xhr.setRequestHeader("Authorization", "Bearer " + localStorage.getItem("token"));
+      xhr.send();
+    }
+  
+    const token = localStorage.getItem("token");
+    if(token === null){
+      window.location.href = "login.html";
+    }else{
+      var data = "";
+      var xhr = new XMLHttpRequest();
+      xhr.addEventListener("readystatechange",function(){
+        if(this.readyState === 4){
+          if(this.status === 200){
+            alert("Welcome Member");
+            loadPhoto();
+          }else{
+            window.location.href = "login.html";
+          }
+        }
+      });
+      xhr.open("GET", "member-protected");
+      xhr.setRequestHeader("Authorization", "Bearer " + token);
+      xhr.send(data);
+    }
 
-  const logout = document.getElementById("logout");
-  logout.addEventListener("click", logoutUser);
+    const logout = document.getElementById("logout");
+    logout.addEventListener("click", logoutUser);
+
+    document.getElementById("uploadBtn").addEventListener("click", function(){
+      const fileInput = document.getElementById("avatar");
+      const msg = document.getElementById("uploadMsg");
+
+      if(!fileInput.files.length){
+        msg.textContent = "Please choose a file.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("avatar", fileInput.files[0]);
+
+      const xhr = new XMLHttpRequest();
+      xhr.addEventListener("readystatechange", function(){
+        if(this.readyState === 4){
+          const response = JSON.parse(this.responseText);
+          if(this.status === 200){
+            msg.style.color = "green";
+            msg.textContent = response.message;
+            loadPhoto();
+          }else{
+            msg.style.color = "red";
+            msg.textContent = response.message;
+          }
+        }
+      });
+      xhr.open("POST", "member-upload-photo");
+      xhr.setRequestHeader("Authorization", "Bearer " + localStorage.getItem("token"));
+      xhr.send(formData);
+    });
   </script>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+

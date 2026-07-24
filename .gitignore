@@ -1,4 +1,5 @@
 .env
+.env.bak
+notes/
 node_modules/
-notes.md
-raw_req.json
+uploads/

@@ -23,7 +23,11 @@ const MemberSchema = new Schema(
     password: {
       type: String,
       required: true
-    }
+    },
+    avatar:{
+      type: String,
+      default: null
+    },
   },
   { timestamps: true } // Enable timestamps The schema is configured to automatcally include tmestamp fields (createdAt and updatedAt). 
 );
