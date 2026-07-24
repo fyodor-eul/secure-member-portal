@@ -4,38 +4,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>President Page</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
   </head>
   <body>
     <h3>Welcome President</h3>
     <a href="#" id="logout">Logout</a>
+
+    <h4>Recent Failed Login Attempts</h4>
+    <button id="refreshLogs">Refresh</button>
+    <table id="logTable" border="1" cellpadding="6" style="margin-top:10px; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th>Time</th><th>Username Tried</th><th>Role</th><th>Reason</th><th>IP</th>
+        </tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+    <p id="logMsg"></p>
+
   </body>
   <script>
-  function logoutUser(event){
-    localStorage.removeItem("token");
-    window.location.href = "login.html";
-  }
+    function logoutUser(event){
+      localStorage.removeItem("token");
+      window.location.href = "login.html";
+    }
 
-  const token = localStorage.getItem("token");
-  if(token === null){
-    window.location.href = "login.html";
-  }else{
-    var data = "";
-    var xhr = new XMLHttpRequest();
-    xhr.addEventListener("readystatechange",function(){
-      if(this.readyState === 4){
-        if(this.status === 200){
-          alert("Welcome President");
-        }else{
-          window.location.href = "login.html";
+    function loadLogs(){
+      const xhr = new XMLHttpRequest();
+      xhr.addEventListener("readystatechange", function(){
+        if(this.readyState !== 4){
+          return;
         }
-      }
-    });
-    xhr.open("GET", "president-protected");
-    xhr.setRequestHeader("Authorization", "Bearer " + token);
-    xhr.send(data);
-  }
 
-  const logout = document.getElementById("logout");
-  logout.addEventListener("click", logoutUser);
+        const body = document.getElementById("logBody");
+        const msg = document.getElementById("logMsg");
+
+        if(this.status !== 200){
+          msg.textContent = "Could not load logs.";
+          return;
+        }
+
+        const data = JSON.parse(this.responseText);
+        body.innerHTML = "";
+
+        if(data.logs.length === 0){
+          msg.textContent = "No failed attempts recorded.";
+          return;
+        }
+
+        msg.textContent = "";
+        data.logs.forEach(function(log){
+          const row = document.createElement("tr");
+          [
+            new Date(log.createdAt).toLocaleString(),
+            log.attemptedName,
+            log.attemptedRole,
+            log.reason,
+            log.ip
+          ].forEach(function(value){
+              const cell = document.createElement("td");
+              cell.textContent = value;
+              row.appendChild(cell);
+          });
+          body.appendChild(row);
+        });
+      });
+      xhr.open("GET", "failed-logins");
+      xhr.setRequestHeader("Authorization", "Bearer " + localStorage.getItem("token"));
+      xhr.send();
+    }
+  
+    const token = localStorage.getItem("token");
+    if(token === null){
+      window.location.href = "login.html";
+    }else{
+      var data = "";
+      var xhr = new XMLHttpRequest();
+      xhr.addEventListener("readystatechange",function(){
+        if(this.readyState === 4){
+          if(this.status === 200){
+            alert("Welcome President");
+            loadLogs();
+          }else{
+            window.location.href = "login.html";
+          }
+        }
+      });
+      xhr.open("GET", "president-protected");
+      xhr.setRequestHeader("Authorization", "Bearer " + token);
+      xhr.send(data);
+    }
+  
+    const logout = document.getElementById("logout");
+    logout.addEventListener("click", logoutUser);
+    document.getElementById("refreshLogs").addEventListener("click", loadLogs);
   </script>
 </html>

@@ -1,7 +1,10 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken"); // (authentication) for member login
 require('dotenv').config()
+
 const Member = require("../Database/member");
+const FailedLogin = require("../Database/failedLogin");
+
 const INVALID_CREDENTIALS = { message: "Invalid credentials provided." };
 
 /* Sign up a member (member, president, treasurer) */
@@ -44,7 +47,8 @@ const memberSignup = async(req, role, res) => {
 
   }catch (err){
     return res.status(500).json({
-      message: `${err.message}`
+      //message: `${err.message}`     // not disclose the error msg
+      message: "Error on Server Side"
     });
   }
 };
@@ -59,8 +63,32 @@ const validateEmail = async email => {
   return member ? false : true;
 };
 
+/* Record a failed login attempt. */
+const normalizeIp = (ip) => {
+  if(!ip) return ip;
+  if(ip.startsWith("::ffff:")) return ip.slice(7);
+  if(ip === "::1") return "127.0.0.1";
+  return ip;
+};
+
+const logFailedLogin = async (name, role, reason, req) => {
+  try{
+    const failedLogin = new FailedLogin({
+      attemptedName: name || "(none)",
+      attemptedRole: role,
+      reason: reason,
+      ip: normalizeIp(req?.ip),
+      userAgent: req?.headers?.["user-agent"]
+    });
+    await failedLogin.save();
+  }catch{
+    // logging must never break the login flow
+    console.error("[LOG] Failed to write failed-login record");
+  }
+};
+
 /* Log in a member (member, president, treasurer) */
-const memberLogin = async (req, role, res) => {
+const memberLogin = async (req, role, res, httpReq) => {
 
   let { name, password } = req;
   // console.log(name, password);
@@ -68,12 +96,17 @@ const memberLogin = async (req, role, res) => {
   // Check if the username exists
   const member = await Member.findOne({ name });
   if(!member){
-    // Normally 404 for user not found.
+    // Add log for failed attempt : USER_NOT_FOUND
+    await logFailedLogin(name, role, "USER_NOT_FOUND", httpReq);
+    // Normally 404 for user not found. but we are not disclosing this information
     return res.status(401).json(INVALID_CREDENTIALS);
   }
 
   // Check role
   if(member.role !== role){
+    // Logging role mismatch
+    await logFailedLogin(name, role, "ROLE_MISMATCH", httpReq);
+    // Not disclosing the role mismatch to users
     /*
     return res.status(403).json({
       message: "Please make sure you are logging in from the right place"
@@ -96,7 +129,6 @@ const memberLogin = async (req, role, res) => {
       { expiresIn: "3 days" }
     );
 
-    // This has technically no effect yet, just showing information
     let result = {
       name: member.name,
       role: member.role,
@@ -110,6 +142,7 @@ const memberLogin = async (req, role, res) => {
       message: "You are now logged in."
     });
   }else{
+    await logFailedLogin(name, role, "WRONG_PASSWORD", httpReq);
     return res.status(401).json(INVALID_CREDENTIALS);
   }
 };
