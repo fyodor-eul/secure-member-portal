@@ -17,7 +17,7 @@
     <table id="logTable" border="1" cellpadding="6" style="margin-top:10px; border-collapse:collapse;">
       <thead>
         <tr>
-          <th>Time</th><th>Username Tried</th><th>Role</th><th>Reason</th><th>IP</th>
+          <th>Time</th><th>Username Tried</th><th>Role</th><th>Reason</th><th>IP</th><th>User Agent</th>
         </tr>
       </thead>
       <tbody id="logBody"></tbody>
@@ -103,7 +103,8 @@
             log.attemptedName,
             log.attemptedRole,
             log.reason,
-            log.ip
+            log.ip,
+            log.userAgent
           ].forEach(function(value){
               const cell = document.createElement("td");
               cell.textContent = value;
