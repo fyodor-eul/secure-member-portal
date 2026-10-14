@@ -23,6 +23,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install Dependencies
+        run: npm ci
+
       - name: Test JS files
         run: |
           for f in $(git ls-files '*.js'); do
