@@ -244,6 +244,6 @@ module.exports = {
   memberLogin,
   memberAuth,
   checkRole
-;
+};
 
 
