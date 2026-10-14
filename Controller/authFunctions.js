@@ -243,7 +243,7 @@ module.exports = {
   memberSignup,
   memberLogin,
   memberAuth,
-  checkRole
+  checkRoleeee
 };
 
 
