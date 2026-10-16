@@ -13,6 +13,26 @@ defaults:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:latest
+        ports:
+          - 27017:27017/tcp
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10s
+
+    env:
+      DB_CONNECT: mongodb://localhost:27017/ci
+      APP_SECRET: ci-only-not-a-real-secret
+      MAX_UPLOAD_BYTES: 2097152
+      SPIKE_WINDOW_MS: 600000
+      SPIKE_THRESHOLD_ACCOUNT: 5
+      SPIKE_THRESHOLD_IP: 10
+
     steps:
       - name: Get the Code on the Runner
         uses: actions/checkout@v4
@@ -33,3 +53,6 @@ jobs:
             node --check "$f"
           done
           echo "Exit Code: $?"
+
+      - name: Smoke Test
+        run: npm test

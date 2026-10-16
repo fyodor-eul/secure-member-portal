@@ -11,7 +11,7 @@ node ./server.js >&"$LOG" &
 SERVER_PID="$!"
 
 # If anything goes wrong kill the server and remove the logs
-trap 'kill -9 "$SERVER_PID" && rm -f "$LOG"' exit
+trap 'kill "$SERVER_PID"; rm -f "$LOG"' exit
 
 # Wait 15s for the server to start listening
 for _ in $(seq 1 10); do
@@ -32,7 +32,7 @@ status_code=$(
 }
 echo "[ PASS ] GET / -> $status_code"
 
-# Check 2: Database
+# Check 2: MongoDB
 status_code=$(
   curl -s -o /dev/null -w '%{http_code}' \
     -X POST --max-time 15 \
