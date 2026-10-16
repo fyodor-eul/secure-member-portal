@@ -26,7 +26,7 @@ jobs:
           --health-retries 10
 
     env:
-      DB_CONNECT: mongodb://localhost:27018/ci
+      DB_CONNECT: mongodb://localhost:27017/ci
       APP_SECRET: ci-only-not-a-real-secret
       MAX_UPLOAD_BYTES: 2097152
       SPIKE_WINDOW_MS: 600000
@@ -40,7 +40,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 26
+          node-version: 22
           cache: npm
 
       - name: Install Dependencies
